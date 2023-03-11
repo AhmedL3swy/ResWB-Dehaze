@@ -16,7 +16,9 @@ with open("testcfg.yaml","r") as f:
 
 VAL_HAZY_IMAGES_PATH = config["VAL_HAZY_IMAGES_PATH"]
 VAL_GT_IMAGES_PATH = config["VAL_GT_IMAGES_PATH"]
+RESIZE = config["RESIZE"] 
 
+TEST_IMAGE_SIZE = config["TEST_IMAGE_SIZE"] 
 VAL_BATCH_SIZE = config["VAL_BATCH_SIZE"]
 NUM_WORKERS = config["NUM_WORKERS"]
 
@@ -30,24 +32,17 @@ device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 MyEnsembleNet = Custom_fusion_net().float()
 print('MyEnsembleNet parameters:', sum(param.numel() for param in MyEnsembleNet.parameters()))
 
-# --- Build optimizer --- #
-G_optimizer = torch.optim.Adam(MyEnsembleNet.parameters(), lr=0.0001)
-
 # --- Load testing data --- #
 val_data = CustomDataLoader(HAZY_path = VAL_HAZY_IMAGES_PATH,
                             GT_path = VAL_GT_IMAGES_PATH,
-                            image_size = (1152,1600),
-                            white_balance = False,
-                            crop = False,
-                            resize = False)
+                            image_size = TEST_IMAGE_SIZE,
+                            resize = RESIZE)
 
 val_loader = DataLoader(val_data, 
                         batch_size = VAL_BATCH_SIZE, 
                         num_workers = NUM_WORKERS)
-
 MyEnsembleNet = MyEnsembleNet.to(device)
-val_data = dehaze_test_dataset(VAL_HAZY_IMAGES_PATH, VAL_GT_IMAGES_PATH)
-val_loader = DataLoader(dataset=val_data, batch_size=1, shuffle=False, num_workers=0)
+
 # --- Load the network weight --- #
 try:
     MyEnsembleNet.load_state_dict(torch.load(G_model_save_dir))
@@ -55,31 +50,21 @@ try:
 except:
     print('--- no weight loaded ---')
 # --- Start training --- #
-print("-----Testing-----")
+print("-----Testing-----")     
 with torch.inference_mode():
     psnr_list = []
     ssim_list = []
     MyEnsembleNet.eval()
-    for batch_idx, (frame1, frame2,frame3,frame4,name,clean) in enumerate(val_loader):
-            frame1 = frame1.to(device)
-            frame2 = frame2.to(device)
-            frame3 = frame3.to(device)
-            frame4 = frame4.to(device)
-            clean = clean.to(device)
-            #frame_out_up,_ = MyEnsembleNet(hazy_up)
-            #frame_out_down,_ = MyEnsembleNet(hazy_down)
-            frameo1,_ = MyEnsembleNet(frame1)
-            frameo2,_ = MyEnsembleNet(frame2)
-            frameo3,_ = MyEnsembleNet(frame3)
-            frameo4,_ = MyEnsembleNet(frame4)
+    for batch_idx, (hazy, clean, data_name) in enumerate(val_loader): 
+        clean = clean.to(device)
+        hazy = hazy.to(device)
+        frame_out, _ = MyEnsembleNet(hazy)
+        psnr_list.extend(to_psnr(frame_out, clean))
+        ssim_list.extend(to_ssim_skimage(frame_out, clean))
+        if not os.path.exists('test/'):
+            os.makedirs('test/')
+        imwrite(frame_out, 'test/' + ''.join(data_name) + '.png', range=(0, 1))
 
-            frame_out = (torch.cat([frameo1.permute(0, 2, 3, 1), frameo2[:, :, 20:, :].permute(0, 2, 3, 1),frameo3[:, :, 60:, :].permute(0, 2, 3, 1), frameo4.permute(0, 2, 3, 1)],1)).permute(0, 3, 1, 2)
-
-            psnr_list.extend(to_psnr(frame_out, clean))
-            ssim_list.extend(to_ssim_skimage(frame_out, clean))
-            if not os.path.exists('output/'):
-               os.makedirs('output/')
-            imwrite(frame_out, 'output/' + ''.join(name) + '.png', range=(0, 1))
 avr_psnr = sum(psnr_list) / len(psnr_list)
 avr_ssim = sum(ssim_list) / len(ssim_list)
-print('PSNR: ', avr_psnr, 'SSIM: ', avr_ssim)    
+print('PSNR: ', avr_psnr, 'SSIM: ', avr_ssim) 
