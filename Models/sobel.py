@@ -93,6 +93,15 @@ class Sobel_UNet(nn.Module):
         self.tail_conv = nn.Conv2d(nf * 2, output_nc, 3, padding=1, bias=True)
 
     def forward(self, x):
+        b, c, h, w = x.shape  
+        mod1 = h % 64
+        mod2 = w % 64
+        if (mod1):
+            down1 = 64 - mod1
+            x = F.pad(x, (0, 0, 0, down1), "reflect")
+        if (mod2):
+            down2 = 64 - mod2
+            x = F.pad(x, (0, down2, 0, 0), "reflect")
         out1 = self.layer1(x)
         out2 = self.layer2(out1)
         out3 = self.layer3(out2)
@@ -111,4 +120,6 @@ class Sobel_UNet(nn.Module):
         dout2_out1 = torch.cat([dout2, out1], 1)
         dout1 = self.dlayer1(dout2_out1)
         dout1 = self.tail_conv(dout1)
+        if (mod1): dout1 = dout1[:, :, :-down1, :]
+        if (mod2): dout1 = dout1[:, :, :, :-down2]
         return dout1
