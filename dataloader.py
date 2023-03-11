@@ -1,55 +1,6 @@
 from env import *
 from Models.sobel import *
 
-class CustomDataLoader(torch.utils.data.Dataset):
-    def __init__(self, HAZY_path = None, GT_path = None, image_size = (64,64), white_balance = True, crop = False, resize = None):
-        self.HAZY_path = Path(HAZY_path)
-        self.GT_path = Path(GT_path)
-        self.HAZY_Image = sorted(self.HAZY_path.glob("*.png")) # list all the files present in HAZY images folder...
-        self.GT_Image = sorted(self.GT_path.glob("*.png")) # list all the files present in GT images folder...
-        self.HAZY_Image_Name = []
-        assert len(self.HAZY_Image) == len(self.GT_Image)  
-        self.white_balance = white_balance
-        self.crop = crop
-        self.resize = resize
-        if(self.crop):
-            self.train_transforms = transforms.Compose([transforms.ToTensor(),
-                                                        transforms.TenCrop(image_size)])
-        elif(self.resize):
-            self.train_transforms = transforms.Compose([transforms.Resize(image_size),
-                                                        transforms.ToTensor()])
-        else:
-            self.train_transforms = transforms.Compose([transforms.ToTensor()])
-        if(self.white_balance):
-            #Preprocessing all images   
-            for i in range(len(self.HAZY_Image)):
-              HAZY = Image.open(self.HAZY_Image[i])           
-              HAZY = white_balance_transform(np.asarray(HAZY).astype(np.uint8))
-              self.HAZY_Image_Name.append(self.HAZY_Image[i].stem)
-              self.HAZY_Image[i] = Image.fromarray(HAZY, 'RGB')
-
-    def load_image(self, index: int, image_type = "HAZY") -> Image.Image:
-        "Opens an image via a path and returns it."
-
-        if image_type == "HAZY":
-          image_path = self.HAZY_Image[index]
-        elif image_type == "GT":
-          image_path = self.GT_Image[index]
-
-        return Image.open(image_path)
-        
-    def __len__(self):
-        return len(self.HAZY_Image) # return length of dataset
-    
-    def __getitem__(self, index):
-        if(self.white_balance):
-          HAZY = self.HAZY_Image[index]
-          GT = Image.open(self.GT_Image[index]) 
-          return self.train_transforms(HAZY), self.train_transforms(GT), self.HAZY_Image_Name[index]
-        else:
-          HAZY = Image.open(self.HAZY_Image[index])
-          GT = Image.open(self.GT_Image[index]) 
-          return self.train_transforms(HAZY), self.train_transforms(GT), self.HAZY_Image[index].stem
 #data augmentation for image rotate
 def custom_augment(hazy, clean, clean_gray):
     augmentation_method = random.choice([0, 1, 2, 3, 4, 5])
@@ -62,14 +13,14 @@ def custom_augment(hazy, clean, clean_gray):
         return hazy, clean, clean_gray
     '''Vertical'''
     if augmentation_method == 1:
-        vertical_flip = torchvision.transforms.RandomVerticalFlip(p=1)
+        vertical_flip = transforms.RandomVerticalFlip(p=1)
         hazy = vertical_flip(hazy)
         clean = vertical_flip(clean)
         clean_gray = vertical_flip(clean_gray)
         return hazy, clean, clean_gray
     '''Horizontal'''
     if augmentation_method == 2:
-        horizontal_flip = torchvision.transforms.RandomHorizontalFlip(p=1)
+        horizontal_flip = transforms.RandomHorizontalFlip(p=1)
         hazy = horizontal_flip(hazy)
         clean = horizontal_flip(clean)
         clean_gray = horizontal_flip(clean_gray)
@@ -87,7 +38,6 @@ class custom_dehaze_train_dataset(Dataset):
         self.GT_Image = sorted(self.GT_path.glob("*.png")) # list all the files present in GT images folder...
         self.Image_Size = Image_Size
         self.is_train = is_train
-        self.sobel= Sobel()
 
     def __getitem__(self, index):
         hazy = Image.open(self.HAZY_Image[index])
@@ -114,8 +64,10 @@ class custom_dehaze_train_dataset(Dataset):
           hazy = self.transform(hazy)
           clean = self.transform(clean)
           return hazy,clean
+
     def __len__(self):
         return len(self.HAZY_Image) # return length of dataset
+
 class dehaze_test_dataset(Dataset):
     def __init__(self, HAZY_PATH = None, GT_PATH = None):
         self.transform = transforms.Compose([transforms.ToTensor()])
@@ -127,21 +79,51 @@ class dehaze_test_dataset(Dataset):
     def __getitem__(self, index, is_train=True):
         hazy = Image.open(self.list_test[index])
         hazy = self.transform(hazy)
-        # hazy_up=hazy[:,0:1152,:]
-        # hazy_down=hazy[:,48:1200,:]
-        #288
-        #320*4=1280 : 80 pixel >>40 pixel
-        frame1=hazy[:,0:320,:] #0:
-        frame2=hazy[:,300:620,:] #20:
-        frame3=hazy[:,560:880,:] #60:
-        frame4=hazy[:,880:1200,:] #880>1200
+        #----------- Gives cuda out of memory -----------
+        hazy_up=hazy[:,0:1152,:]
+        hazy_down=hazy[:,48:1200,:]
 
+        # ----------- Doesn't give cuda out of memory but the separating line is visible -----------
+        # hazy_up=hazy[:,0:768,:]
+        # hazy_down=hazy[:,432:1200,:]
         name=self.list_test[index].stem
         if len(self.list_GT) == 0:
-          return frame1, frame2,frame3,frame4,name
+          return hazy_up,hazy_down,name
         else:
           clean=Image.open(self.list_GT[index])
           clean = self.transform(clean)
-          return frame1, frame2,frame3,frame4, name, clean 
+          return hazy_up, hazy_down, name, clean 
     def __len__(self):
         return self.file_len
+
+class CustomDataLoader(Dataset):
+    def __init__(self, HAZY_path = None, GT_path = None, image_size = None, resize = None):
+        self.HAZY_path = Path(HAZY_path)
+        self.GT_path = Path(GT_path)
+        self.HAZY_Image = sorted(self.HAZY_path.glob("*.png")) # list all the files present in HAZY images folder...
+        self.GT_Image = sorted(self.GT_path.glob("*.png")) # list all the files present in GT images folder...
+        assert len(self.HAZY_Image) == len(self.GT_Image)  
+        self.resize = resize
+        if(self.resize):
+            self.data_transforms = transforms.Compose([transforms.Resize(image_size),
+                                                        transforms.ToTensor()])
+        else:
+            self.data_transforms = transforms.Compose([transforms.ToTensor()])
+
+    def load_image(self, index: int, image_type = "HAZY") -> Image.Image:
+        "Opens an image via a path and returns it."
+
+        if image_type == "HAZY":
+          image_path = self.HAZY_Image[index]
+        elif image_type == "GT":
+          image_path = self.GT_Image[index]
+
+        return Image.open(image_path)
+        
+    def __len__(self):
+        return len(self.HAZY_Image) # return length of dataset
+    
+    def __getitem__(self, index):
+        HAZY = Image.open(self.HAZY_Image[index])
+        GT = Image.open(self.GT_Image[index]) 
+        return self.data_transforms(HAZY), self.data_transforms(GT), self.HAZY_Image[index].stem
