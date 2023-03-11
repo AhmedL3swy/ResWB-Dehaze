@@ -1,9 +1,0 @@
-torch
-opencv-python
-einops
-tensorboardX
-numpy
-torchvision
-scikit-image
-Pillow
-pathlib
