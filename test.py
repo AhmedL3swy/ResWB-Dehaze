@@ -10,16 +10,18 @@ from Models.gblock import *
 from Models.restormer import *
 from Models.sobel import *
 from Models.hazemap import *
-# VAL_HAZY_IMAGES_PATH = "/content/drive/MyDrive/Graduation Project/data/valid_dense/HAZY/"
-# VAL_GT_IMAGES_PATH = "/content/drive/MyDrive/Graduation Project/data/valid_dense/GT/"
-VAL_HAZY_IMAGES_PATH = "/content/drive/MyDrive/Graduation Project/data/NH-HAZE/Test_Hazy/"
-VAL_GT_IMAGES_PATH = "/content/drive/MyDrive/Graduation Project/data/NH-HAZE/Test_GT/"
+import yaml
+with open("testcfg.yaml","r") as f:
+    config=yaml.safe_load(f)
 
-VAL_BATCH_SIZE = 1
-NUM_WORKERS = 0
+VAL_HAZY_IMAGES_PATH = config["VAL_HAZY_IMAGES_PATH"]
+VAL_GT_IMAGES_PATH = config["VAL_GT_IMAGES_PATH"]
+
+VAL_BATCH_SIZE = config["VAL_BATCH_SIZE"]
+NUM_WORKERS = config["NUM_WORKERS"]
 
 # --- output picture and check point --- #
-G_model_save_dir = "/content/drive/MyDrive/Graduation Project/CANT_Haze/Weights/Generator_NH_Restormer_HM_NAFNET_GBlock_Enhancer_Sobel.pth"
+G_model_save_dir = config["G_model_save_dir"]
 # --- Gpu device --- #
 device_ids = [Id for Id in range(torch.cuda.device_count())]
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")

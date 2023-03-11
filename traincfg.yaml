@@ -1,0 +1,21 @@
+train_epoch : 100 # Currently at 1700 epochs and should reach 1800 after this
+best_psnr : 20.75
+# TRAIN_HAZY_IMAGES_PATH : "/content/drive/MyDrive/Graduation Project/data/train_dense/haze/"
+# TRAIN_GT_IMAGES_PATH : "/content/drive/MyDrive/Graduation Project/data/train_dense/GT/"
+# VAL_HAZY_IMAGES_PATH : "/content/drive/MyDrive/Graduation Project/data/valid_dense/HAZY/"
+# VAL_GT_IMAGES_PATH : "/content/drive/MyDrive/Graduation Project/data/valid_dense/GT/"
+TRAIN_HAZY_IMAGES_PATH : "/content/drive/MyDrive/Graduation Project/data/NH-HAZE/train_NH/haze/"
+TRAIN_GT_IMAGES_PATH : "/content/drive/MyDrive/Graduation Project/data/NH-HAZE/train_NH/clear_images/"
+VAL_HAZY_IMAGES_PATH : "/content/drive/MyDrive/Graduation Project/data/NH-HAZE/Test_Hazy/"
+VAL_GT_IMAGES_PATH : "/content/drive/MyDrive/Graduation Project/data/NH-HAZE/Test_GT/"
+IMAGE_SIZE : (256,256)
+TRAIN_BATCH_SIZE : 1
+VAL_BATCH_SIZE : 1
+NUM_WORKERS : 0
+SHUFFLE : True
+# --- output picture and check point --- #
+G_model_save_dir : "/content/drive/MyDrive/Graduation Project/CANT_Haze/Weights/Generator_NH_Restormer_Twice_HM_GBlock_AWB_Sobel.pth"
+D_model_save_dir : "/content/drive/MyDrive/Graduation Project/CANT_Haze/Weights/Discriminator_NH_Restormer_Twice_HM_GBlock_AWB_Sobel.pth"
+G_best_model_save_dir : "/content/drive/MyDrive/Graduation Project/CANT_Haze/Weights/Generator_NH_Restormer_Twice_HM_GBlock_AWB_Sobel_Best.pth"
+D_best_model_save_dir : "/content/drive/MyDrive/Graduation Project/CANT_Haze/Weights/Discriminator_NH_Restormer_Twice_HM_GBlock_AWB_Sobel_Best.pth"
+# --- Gpu device --- #

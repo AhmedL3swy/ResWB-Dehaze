@@ -10,26 +10,29 @@ from Models.gblock import *
 from Models.restormer import *
 from Models.sobel import *
 # --- train --- #
-train_epoch = 100 # Currently at 1700 epochs and should reach 1800 after this
-best_psnr = 20.75
-# TRAIN_HAZY_IMAGES_PATH = "/content/drive/MyDrive/Graduation Project/data/train_dense/haze/"
-# TRAIN_GT_IMAGES_PATH = "/content/drive/MyDrive/Graduation Project/data/train_dense/GT/"
-# VAL_HAZY_IMAGES_PATH = "/content/drive/MyDrive/Graduation Project/data/valid_dense/HAZY/"
-# VAL_GT_IMAGES_PATH = "/content/drive/MyDrive/Graduation Project/data/valid_dense/GT/"
-TRAIN_HAZY_IMAGES_PATH = "/content/drive/MyDrive/Graduation Project/data/NH-HAZE/train_NH/haze/"
-TRAIN_GT_IMAGES_PATH = "/content/drive/MyDrive/Graduation Project/data/NH-HAZE/train_NH/clear_images/"
-VAL_HAZY_IMAGES_PATH = "/content/drive/MyDrive/Graduation Project/data/NH-HAZE/Test_Hazy/"
-VAL_GT_IMAGES_PATH = "/content/drive/MyDrive/Graduation Project/data/NH-HAZE/Test_GT/"
-IMAGE_SIZE = (256,256)
-TRAIN_BATCH_SIZE = 1
-VAL_BATCH_SIZE = 1
-NUM_WORKERS = 0
-SHUFFLE = True
+import yaml
+with open("traincfg.yaml","r") as f:
+    config=yaml.safe_load(f)
+train_epoch = config["train_epoch"] # Currently at 1700 epochs and should reach 1800 after this
+best_psnr = config["best_psnr"]
+# TRAIN_HAZY_IMAGES_PATH = config["TRAIN_HAZY_IMAGES_PATH"]
+# TRAIN_GT_IMAGES_PATH = config["TRAIN_GT_IMAGES_PATH"]
+# VAL_HAZY_IMAGES_PATH = config["VAL_HAZY_IMAGES_PATH"]
+# VAL_GT_IMAGES_PATH = config["VAL_GT_IMAGES_PATH"]
+TRAIN_HAZY_IMAGES_PATH = config["TRAIN_HAZY_IMAGES_PATH"]
+TRAIN_GT_IMAGES_PATH = config["TRAIN_GT_IMAGES_PATH"]
+VAL_HAZY_IMAGES_PATH = config["VAL_HAZY_IMAGES_PATH"]
+VAL_GT_IMAGES_PATH = config["VAL_GT_IMAGES_PATH"]
+IMAGE_SIZE = config["IMAGE_SIZE"]
+TRAIN_BATCH_SIZE = config["TRAIN_BATCH_SIZE"]
+VAL_BATCH_SIZE = config["VAL_BATCH_SIZE"]
+NUM_WORKERS = config["NUM_WORKERS"]
+SHUFFLE = config["SHUFFLE"]
 # --- output picture and check point --- #
-G_model_save_dir = "/content/drive/MyDrive/Graduation Project/CANT_Haze/Weights/Generator_NH_Restormer_Twice_HM_GBlock_AWB_Sobel.pth"
-D_model_save_dir = "/content/drive/MyDrive/Graduation Project/CANT_Haze/Weights/Discriminator_NH_Restormer_Twice_HM_GBlock_AWB_Sobel.pth"
-G_best_model_save_dir = "/content/drive/MyDrive/Graduation Project/CANT_Haze/Weights/Generator_NH_Restormer_Twice_HM_GBlock_AWB_Sobel_Best.pth"
-D_best_model_save_dir = "/content/drive/MyDrive/Graduation Project/CANT_Haze/Weights/Discriminator_NH_Restormer_Twice_HM_GBlock_AWB_Sobel_Best.pth"
+G_model_save_dir = config["G_model_save_dir"]
+D_model_save_dir = config["D_model_save_dir"]
+G_best_model_save_dir = config["G_best_model_save_dir"]
+D_best_model_save_dir = config["D_best_model_save_dir"]
 # --- Gpu device --- #
 device_ids = [Id for Id in range(torch.cuda.device_count())]
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
