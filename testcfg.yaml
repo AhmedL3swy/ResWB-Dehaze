@@ -2,7 +2,11 @@ VAL_HAZY_IMAGES_PATH : "/content/drive/MyDrive/Graduation Project/data/NH-HAZE/T
 VAL_GT_IMAGES_PATH : "/content/drive/MyDrive/Graduation Project/data/NH-HAZE/Test_GT/"
 
 RESIZE : True 
-TEST_IMAGE_SIZE : (768,1024) 
+TEST_IMAGE_SIZE:
+  x : 768
+  y : 1024
+
+
 
 VAL_BATCH_SIZE : 1
 NUM_WORKERS : 0
