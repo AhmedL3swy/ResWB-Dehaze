@@ -1,12 +1,9 @@
 torch
-gc
-cv2
-random
-numbers
+opencv-python
 einops
 tensorboardX
 numpy
 torchvision
-skimage
-PIL
+scikit-image
+Pillow
 pathlib
